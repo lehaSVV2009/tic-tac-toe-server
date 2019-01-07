@@ -714,12 +714,13 @@ blob@0.0.5:
   version "0.0.5"
   resolved "https://registry.yarnpkg.com/blob/-/blob-0.0.5.tgz#d680eeef25f8cd91ad533f5b01eed48e64caf683"
 
-boardgame.io@^0.26.3:
-  version "0.26.3"
-  resolved "https://registry.yarnpkg.com/boardgame.io/-/boardgame.io-0.26.3.tgz#2ef058aea3878f7b87cf33dd9fdcc6d0211bc96e"
+boardgame.io@^0.29.2:
+  version "0.29.2"
+  resolved "https://registry.yarnpkg.com/boardgame.io/-/boardgame.io-0.29.2.tgz#be379a34905d53ed0c87b695666a6da6caea9d16"
   dependencies:
     "@koa/cors" "^2.2.1"
     flatted "^0.2.3"
+    immer "^1.8.0"
     koa "^2.5.2"
     koa-body "^2.5.0"
     koa-router "^7.2.1"
@@ -1316,6 +1317,10 @@ ignore-walk@^3.0.1:
   resolved "https://registry.yarnpkg.com/ignore-walk/-/ignore-walk-3.0.1.tgz#a83e62e7d272ac0e3b551aaa82831a19b69f82f8"
   dependencies:
     minimatch "^3.0.4"
+
+immer@^1.8.0:
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/immer/-/immer-1.10.0.tgz#bad67605ba9c810275d91e1c2a47d4582e98286d"
 
 indexof@0.0.1:
   version "0.0.1"
@@ -2358,8 +2363,6 @@ tar@^4:
 tic-tac-toe-core@lehaSVV2009/tic-tac-toe-core#master:
   version "0.1.0"
   resolved "https://codeload.github.com/lehaSVV2009/tic-tac-toe-core/tar.gz/011bc6bc32de9a5810854941d272bda1465a993a"
-  dependencies:
-    postinstall-build "^5.0.3"
 
 to-array@0.1.4:
   version "0.1.4"
