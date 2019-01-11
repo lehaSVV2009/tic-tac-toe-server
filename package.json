@@ -16,6 +16,8 @@
     "server"
   ],
   "dependencies": {
+    "boardgame.io": "^0.29.5",
+    "react": "^16.7.0",
     "tic-tac-toe-core": "lehaSVV2009/tic-tac-toe-core#master"
   },
   "scripts": {

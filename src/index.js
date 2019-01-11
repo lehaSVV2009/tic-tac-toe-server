@@ -1,4 +1,5 @@
-import Server from "./libs/boardgameio/server";
+import "babel-polyfill";
+import { Server } from "./libs/boardgame.io/server";
 import { Game } from "tic-tac-toe-core";
 
 const port = process.env.PORT || 8000;
