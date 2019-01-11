@@ -1974,10 +1974,6 @@ posix-character-classes@^0.1.0:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/posix-character-classes/-/posix-character-classes-0.1.1.tgz#01eac0fe3b5af71a2a6c02feabb8c1fef7e00eab"
 
-postinstall-build@^5.0.3:
-  version "5.0.3"
-  resolved "https://registry.yarnpkg.com/postinstall-build/-/postinstall-build-5.0.3.tgz#238692f712a481d8f5bc8960e94786036241efc7"
-
 preserve@^0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/preserve/-/preserve-0.2.0.tgz#815ed1f6ebc65926f865b310c0713bcb3315ce4b"
@@ -2388,9 +2384,7 @@ tar@^4:
 
 tic-tac-toe-core@lehaSVV2009/tic-tac-toe-core#master:
   version "0.1.0"
-  resolved "https://codeload.github.com/lehaSVV2009/tic-tac-toe-core/tar.gz/011bc6bc32de9a5810854941d272bda1465a993a"
-  dependencies:
-    postinstall-build "^5.0.3"
+  resolved "https://codeload.github.com/lehaSVV2009/tic-tac-toe-core/tar.gz/2dff6e82231351d7d061370f44d341705f0e84f4"
 
 to-array@0.1.4:
   version "0.1.4"
