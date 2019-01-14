@@ -2,6 +2,117 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+var Flatted = (function (Primitive, primitive) {
+
+  /*!
+   * ISC License
+   *
+   * Copyright (c) 2018, Andrea Giammarchi, @WebReflection
+   *
+   * Permission to use, copy, modify, and/or distribute this software for any
+   * purpose with or without fee is hereby granted, provided that the above
+   * copyright notice and this permission notice appear in all copies.
+   *
+   * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+   * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+   * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+   * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+   * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+   * OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+   * PERFORMANCE OF THIS SOFTWARE.
+   */
+
+  var Flatted = {
+
+    parse: function parse(text) {
+      var input = JSON.parse(text, Primitives).map(primitives);
+      var value = input[0];
+      return typeof value === 'object' && value ?
+              revive(input, new Set, value) : value;
+    },
+
+    stringify: function stringify(value) {
+      for (var
+        firstRun,
+        known = new Map,
+        input = [],
+        output = [],
+        i = +set(known, input, value),
+        replace = function (key, value) {
+          if (firstRun) return (firstRun = !firstRun), value;
+          switch (typeof value) {
+            case 'object':
+              if (value === null) return value;
+            case primitive:
+              return known.get(value) || set(known, input, value);
+          }
+          return value;
+        };
+        i < input.length; i++
+      ) {
+        firstRun = true;
+        output[i] = JSON.stringify(input[i], replace);
+      }
+      return '[' + output.join(',') + ']';
+    }
+
+  };
+
+  return Flatted;
+
+  function revive(input, parsed, output) {
+    return Object.keys(output).reduce(
+      function (output, key) {
+        var value = output[key];
+        if (value instanceof Primitive) {
+          var tmp = input[value];
+          if (typeof tmp === 'object' && !parsed.has(tmp)) {
+            parsed.add(tmp);
+            output[key] = revive(input, parsed, tmp);
+          } else {
+            output[key] = tmp;
+          }
+        }
+        return output;
+      },
+      output
+    );
+  }
+
+  function set(known, input, value) {
+    var index = Primitive(input.push(value) - 1);
+    known.set(value, index);
+    return index;
+  }
+
+  function primitives(value) {
+    return value instanceof Primitive ? Primitive(value) : value;
+  }
+
+  function Primitives(key, value) {
+    return typeof value === primitive ? new Primitive(value) : value;
+  }
+
+}(String, 'string'));
+const parse = Flatted.parse;
+const stringify = Flatted.stringify;
+
+/*
+ * Copyright 2017 The boardgame.io Authors
+ *
+ * Use of this source code is governed by a MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
+
+var MAKE_MOVE = 'MAKE_MOVE';
+var GAME_EVENT = 'GAME_EVENT';
+var REDO = 'REDO';
+var RESET = 'RESET';
+var SYNC = 'SYNC';
+var UNDO = 'UNDO';
+var UPDATE = 'UPDATE';
+
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
 } : function (obj) {
@@ -226,651 +337,6 @@ var toConsumableArray = function (arr) {
     return Array.from(arr);
   }
 };
-
-/*
- * Copyright 2017 The boardgame.io Authors
- *
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE file or at
- * https://opensource.org/licenses/MIT.
- */
-
-/**
- * InMemory data storage.
- */
-var InMemory = function () {
-  /**
-   * Creates a new InMemory storage.
-   */
-  function InMemory() {
-    classCallCheck(this, InMemory);
-
-    this.games = new Map();
-  }
-
-  /**
-   * Connect.
-   * No-op for the InMemory instance.
-   */
-
-
-  createClass(InMemory, [{
-    key: "connect",
-    value: async function connect() {
-      return;
-    }
-
-    /**
-     * Write the game state to the in-memory object.
-     * @param {string} id - The game id.
-     * @param {object} store - A game state to persist.
-     */
-
-  }, {
-    key: "set",
-    value: async function set$$1(id, state) {
-      return await this.games.set(id, state);
-    }
-
-    /**
-     * Read the game state from the in-memory object.
-     * @param {string} id - The game id.
-     * @returns {object} - A game state, or undefined
-     *                     if no game is found with this id.
-     */
-
-  }, {
-    key: "get",
-    value: async function get$$1(id) {
-      return await this.games.get(id);
-    }
-
-    /**
-     * Check if a particular game id exists.
-     * @param {string} id - The game id.
-     * @returns {boolean} - True if a game with this id exists.
-     */
-
-  }, {
-    key: "has",
-    value: async function has(id) {
-      return await this.games.has(id);
-    }
-
-    /**
-     * Remove the game state from the in-memory object.
-     * @param {string} id - The game id.
-     */
-
-  }, {
-    key: "remove",
-    value: async function remove(id) {
-      if (!(await this.games.has(id))) return;
-      this.games.delete(id);
-    }
-
-    /**
-     * Return all keys.
-     * @returns {array} - Array of keys (strings)
-     */
-
-  }, {
-    key: "list",
-    value: async function list() {
-      return [].concat(toConsumableArray((await this.games.keys())));
-    }
-  }]);
-  return InMemory;
-}();
-
-/*
- * Copyright 2017 The boardgame.io Authors
- *
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE file or at
- * https://opensource.org/licenses/MIT.
- */
-
-var LRU = require('lru-cache');
-
-/**
- * MongoDB connector.
- */
-var Mongo = function () {
-  /**
-   * Creates a new Mongo connector object.
-   */
-  function Mongo(_ref) {
-    var url = _ref.url,
-        dbname = _ref.dbname,
-        cacheSize = _ref.cacheSize,
-        mockClient = _ref.mockClient;
-    classCallCheck(this, Mongo);
-
-    if (cacheSize === undefined) cacheSize = 1000;
-    if (dbname === undefined) dbname = 'bgio';
-
-    this.client = mockClient || require('mongodb').MongoClient;
-    this.url = url;
-    this.dbname = dbname;
-    this.cache = new LRU({ max: cacheSize });
-  }
-
-  /**
-   * Connect to the instance.
-   */
-
-
-  createClass(Mongo, [{
-    key: 'connect',
-    value: async function connect() {
-      var c = await this.client.connect(this.url, { useNewUrlParser: true });
-      this.db = c.db(this.dbname);
-      return;
-    }
-
-    /**
-     * Write the game state.
-     * @param {string} id - The game id.
-     * @param {object} store - A game state to persist.
-     */
-
-  }, {
-    key: 'set',
-    value: async function set$$1(id, state) {
-      // Don't set a value if the cache has a more recent version.
-      // This can occur due a race condition.
-      //
-      // For example:
-      //
-      // A --sync--> server | DB => 0 --+
-      //                                |
-      // A <--sync-- server | DB => 0 --+
-      //
-      // B --sync--> server | DB => 0 ----+
-      //                                  |
-      // A --move--> server | DB <= 1 --+ |
-      //                                | |
-      // A <--sync-- server | DB => 1 --+ |
-      //                                  |
-      // B <--sync-- server | DB => 0 ----+
-      //
-      var cacheValue = this.cache.get(id);
-      if (cacheValue && cacheValue._stateID >= state._stateID) {
-        return;
-      }
-
-      this.cache.set(id, state);
-
-      var col = this.db.collection(id);
-      delete state._id;
-      await col.insertOne(state);
-
-      return;
-    }
-
-    /**
-     * Read the game state.
-     * @param {string} id - The game id.
-     * @returns {object} - A game state, or undefined
-     *                     if no game is found with this id.
-     */
-
-  }, {
-    key: 'get',
-    value: async function get$$1(id) {
-      var cacheValue = this.cache.get(id);
-      if (cacheValue !== undefined) {
-        return cacheValue;
-      }
-
-      var col = this.db.collection(id);
-      var docs = await col.find().sort({ _id: -1 }).limit(1).toArray();
-
-      var oldStateID = 0;
-      cacheValue = this.cache.get(id);
-      /* istanbul ignore next line */
-      if (cacheValue !== undefined) {
-        /* istanbul ignore next line */
-        oldStateID = cacheValue._stateID;
-      }
-
-      var newStateID = -1;
-      if (docs.length > 0) {
-        newStateID = docs[0]._stateID;
-      }
-
-      // Update the cache, but only if the read
-      // value is newer than the value already in it.
-      // A race condition might overwrite the
-      // cache with an older value, so we need this.
-      if (newStateID >= oldStateID) {
-        this.cache.set(id, docs[0]);
-      }
-
-      return docs[0];
-    }
-
-    /**
-     * Check if a particular game exists.
-     * @param {string} id - The game id.
-     * @returns {boolean} - True if a game with this id exists.
-     */
-
-  }, {
-    key: 'has',
-    value: async function has(id) {
-      var cacheValue = this.cache.get(id);
-      if (cacheValue !== undefined) {
-        return true;
-      }
-
-      var col = this.db.collection(id);
-      var docs = await col.find().limit(1).toArray();
-      return docs.length > 0;
-    }
-
-    /**
-     * Remove the game state from the DB.
-     * @param {string} id - The game id.
-     */
-
-  }, {
-    key: 'remove',
-    value: async function remove(id) {
-      if (!(await this.has(id))) return;
-
-      function _dropCollection(db, id) {
-        return new Promise(function (ok) {
-          db.dropCollection(id, ok);
-        });
-      }
-      await _dropCollection(this.db, id);
-
-      // Update the cache
-      this.cache.del(id);
-    }
-
-    /**
-     * Return all keys.
-     * @returns {array} - Array of keys (strings)
-     */
-
-  }, {
-    key: 'list',
-    value: async function list() {
-      var keys = await this.db.listCollections().toArray();
-      return keys.map(function (r) {
-        return r.name;
-      });
-    }
-  }]);
-  return Mongo;
-}();
-
-/*
- * Copyright 2017 The boardgame.io Authors
- *
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE file or at
- * https://opensource.org/licenses/MIT.
- */
-
-var LRU$1 = require('lru-cache');
-
-var ENGINE_FIRESTORE = 'Firestore';
-var ENGINE_RTDB = 'RTDB';
-
-/**
- * Firebase RTDB/Firestore connector.
- */
-var Firebase = function () {
-  /**
-   * Creates a new Firebase connector object.
-   * The default engine is Firestore.
-   * @constructor
-   */
-  function Firebase(_ref) {
-    var config = _ref.config,
-        dbname = _ref.dbname,
-        engine = _ref.engine,
-        cacheSize = _ref.cacheSize;
-    classCallCheck(this, Firebase);
-
-    if (cacheSize === undefined) {
-      cacheSize = 1000;
-    }
-
-    if (dbname === undefined) {
-      dbname = 'bgio';
-    }
-
-    // // TODO: better handling for possible errors
-    if (config === undefined) {
-      config = {};
-    }
-
-    this.client = require('firebase');
-    this.engine = engine === ENGINE_RTDB ? engine : ENGINE_FIRESTORE;
-    this.config = config;
-    this.dbname = dbname;
-    this.cache = new LRU$1({ max: cacheSize });
-  }
-
-  /**
-   * Connect to the instance.
-   */
-
-
-  createClass(Firebase, [{
-    key: 'connect',
-    value: async function connect() {
-      this.client.initializeApp(this.config);
-      this.db = this.engine === ENGINE_FIRESTORE ? this.client.firestore() : this.client.database().ref();
-      return;
-    }
-
-    /**
-     * Write the game state.
-     * @param {string} id - The game id.
-     * @param {object} store - A game state to persist.
-     */
-
-  }, {
-    key: 'set',
-    value: async function set$$1(id, state) {
-      var cacheValue = this.cache.get(id);
-      if (cacheValue && cacheValue._stateID >= state._stateID) {
-        return;
-      }
-
-      this.cache.set(id, state);
-
-      var col = this.engine === ENGINE_RTDB ? this.db.child(id) : this.db.collection(this.dbname).doc(id);
-      delete state._id;
-      await col.set(state);
-
-      return;
-    }
-
-    /**
-     * Read the game state.
-     * @param {string} id - The game id.
-     * @returns {object} - A game state, or undefined
-     *                     if no game is found with this id.
-     */
-
-  }, {
-    key: 'get',
-    value: async function get$$1(id) {
-      var cacheValue = this.cache.get(id);
-      if (cacheValue !== undefined) {
-        return cacheValue;
-      }
-
-      var col = void 0,
-          doc = void 0,
-          data = void 0;
-      if (this.engine === ENGINE_RTDB) {
-        col = this.db.child(id);
-        data = await col.once('value');
-        doc = data.val() ? Object.assign({}, data.val(), { _id: id }) : data.val();
-      } else {
-        col = this.db.collection(this.dbname).doc(id);
-        data = await col.get();
-        doc = data.data() ? Object.assign({}, data.data(), { _id: id }) : data.data();
-      }
-
-      var oldStateID = 0;
-      cacheValue = this.cache.get(id);
-      /* istanbul ignore next line */
-      if (cacheValue !== undefined) {
-        /* istanbul ignore next line */
-        oldStateID = cacheValue._stateID;
-      }
-
-      var newStateID = -1;
-      if (doc) {
-        newStateID = doc._stateID;
-      }
-
-      // Update the cache, but only if the read
-      // value is newer than the value already in it.
-      // A race condition might overwrite the
-      // cache with an older value, so we need this.
-      if (newStateID >= oldStateID) {
-        this.cache.set(id, doc);
-      }
-
-      return doc;
-    }
-
-    /**
-     * Check if a particular game exists.
-     * @param {string} id - The game id.
-     * @returns {boolean} - True if a game with this id exists.
-     */
-
-  }, {
-    key: 'has',
-    value: async function has(id) {
-      var cacheValue = this.cache.get(id);
-      if (cacheValue !== undefined) {
-        return true;
-      }
-
-      var col = void 0,
-          data = void 0,
-          exists = void 0;
-      if (this.engine === ENGINE_RTDB) {
-        col = this.db.child(id);
-        data = await col.once('value');
-        exists = data.exists();
-      } else {
-        col = this.db.collection(this.dbname).doc(id);
-        data = await col.get();
-        exists = data.exists;
-      }
-
-      return exists;
-    }
-
-    /**
-     * Remove the game state from the DB.
-     * @param {string} id - The game id.
-     */
-
-  }, {
-    key: 'remove',
-    value: async function remove(id) {
-      if (!(await this.has(id))) return;
-
-      var col = void 0;
-      if (this.engine === ENGINE_RTDB) {
-        col = this.db.child(id);
-        await col.remove();
-      } else {
-        col = this.db.collection(this.dbname).doc(id);
-        await col.delete();
-      }
-
-      // Update the cache
-      this.cache.del(id);
-    }
-
-    /**
-     * Return all keys.
-     * @returns {array} - Array of keys (strings)
-     */
-
-  }, {
-    key: 'list',
-    value: async function list() {
-      if (this.engine === ENGINE_RTDB) {
-        // firebase RTDB
-        var cols = await this.db.once('value');
-        return cols.ref.sortedDataKeys;
-      } else {
-        // firestore
-        var docs = await this.db.collection(this.dbname).get();
-        var ids = [];
-        docs.forEach(function (doc) {
-          return ids.push(doc.id);
-        });
-        return ids;
-      }
-    }
-  }]);
-  return Firebase;
-}();
-
-var DBFromEnv = function DBFromEnv() {
-  if (process.env.MONGO_URI && process.env.MONGO_DATABASE) {
-    return new Mongo({
-      url: process.env.MONGO_URI,
-      dbname: process.env.MONGO_DATABASE
-    });
-  } else if (process.env.FIREBASE_APIKEY && process.env.FIREBASE_AUTHDOMAIN && process.env.FIREBASE_DATABASEURL && process.env.FIREBASE_PROJECTID) {
-    var config = {
-      apiKey: process.env.FIREBASE_APIKEY,
-      authDomain: process.env.FIREBASE_AUTHDOMAIN,
-      databaseURL: process.env.FIREBASE_DATABASEURL,
-      projectId: process.env.FIREBASE_PROJECTID
-    };
-    return new Firebase({ config: config, engine: process.env.FIREBASE_ENGINE });
-  } else {
-    return new InMemory();
-  }
-};
-
-/*
- * Copyright 2018 The boardgame.io Authors
- *
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE file or at
- * https://opensource.org/licenses/MIT.
- */
-
-var DEV = process.env.NODE_ENV === 'development' || process.env.NODE_ENV == 'test';
-var logfn = DEV ? console.log : function () {};
-
-function info(msg) {
-  logfn('INFO: ' + msg);
-}
-function error(msg) {
-  logfn('ERROR: ' + msg);
-}
-
-var Flatted = (function (Primitive, primitive) {
-
-  /*!
-   * ISC License
-   *
-   * Copyright (c) 2018, Andrea Giammarchi, @WebReflection
-   *
-   * Permission to use, copy, modify, and/or distribute this software for any
-   * purpose with or without fee is hereby granted, provided that the above
-   * copyright notice and this permission notice appear in all copies.
-   *
-   * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-   * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-   * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-   * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-   * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
-   * OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-   * PERFORMANCE OF THIS SOFTWARE.
-   */
-
-  var Flatted = {
-
-    parse: function parse(text) {
-      var input = JSON.parse(text, Primitives).map(primitives);
-      var value = input[0];
-      return typeof value === 'object' && value ?
-              revive(input, new Set, value) : value;
-    },
-
-    stringify: function stringify(value) {
-      for (var
-        firstRun,
-        known = new Map,
-        input = [],
-        output = [],
-        i = +set(known, input, value),
-        replace = function (key, value) {
-          if (firstRun) return (firstRun = !firstRun), value;
-          switch (typeof value) {
-            case 'object':
-              if (value === null) return value;
-            case primitive:
-              return known.get(value) || set(known, input, value);
-          }
-          return value;
-        };
-        i < input.length; i++
-      ) {
-        firstRun = true;
-        output[i] = JSON.stringify(input[i], replace);
-      }
-      return '[' + output.join(',') + ']';
-    }
-
-  };
-
-  return Flatted;
-
-  function revive(input, parsed, output) {
-    return Object.keys(output).reduce(
-      function (output, key) {
-        var value = output[key];
-        if (value instanceof Primitive) {
-          var tmp = input[value];
-          if (typeof tmp === 'object' && !parsed.has(tmp)) {
-            parsed.add(tmp);
-            output[key] = revive(input, parsed, tmp);
-          } else {
-            output[key] = tmp;
-          }
-        }
-        return output;
-      },
-      output
-    );
-  }
-
-  function set(known, input, value) {
-    var index = Primitive(input.push(value) - 1);
-    known.set(value, index);
-    return index;
-  }
-
-  function primitives(value) {
-    return value instanceof Primitive ? Primitive(value) : value;
-  }
-
-  function Primitives(key, value) {
-    return typeof value === primitive ? new Primitive(value) : value;
-  }
-
-}(String, 'string'));
-const parse = Flatted.parse;
-const stringify = Flatted.stringify;
-
-/*
- * Copyright 2017 The boardgame.io Authors
- *
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE file or at
- * https://opensource.org/licenses/MIT.
- */
-
-var MAKE_MOVE = 'MAKE_MOVE';
-var GAME_EVENT = 'GAME_EVENT';
-var REDO = 'REDO';
-var RESET = 'RESET';
-var SYNC = 'SYNC';
-var UNDO = 'UNDO';
-var UPDATE = 'UPDATE';
 
 // Inlined version of Alea from https://github.com/davidbau/seedrandom.
 
@@ -2519,6 +1985,759 @@ function CreateGameReducer(_ref) {
   };
 }
 
+/*
+ * Copyright 2018 The boardgame.io Authors
+ *
+ * Use of this source code is governed by a MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
+
+var Router = require('koa-router');
+var koaBody = require('koa-body');
+var uuid = require('uuid/v4');
+var cors = require('@koa/cors');
+var Redux = require('redux');
+
+var createCredentials = function createCredentials() {
+  return uuid();
+};
+var getGameMetadataKey = function getGameMetadataKey(gameID) {
+  return gameID + ':metadata';
+};
+var isGameMetadataKey = function isGameMetadataKey(key, gameName) {
+  return key.match(gameName + ':.*:metadata');
+};
+var getNamespacedGameID = function getNamespacedGameID(gameID, gameName) {
+  return gameName + ':' + gameID;
+};
+var getNewGameInstanceID = function getNewGameInstanceID() {
+  return uuid();
+};
+var createGameMetadata = function createGameMetadata() {
+  return {
+    players: {}
+  };
+};
+
+var isActionFromAuthenticPlayer = async function isActionFromAuthenticPlayer(_ref) {
+  var action = _ref.action,
+      db = _ref.db,
+      gameID = _ref.gameID,
+      playerID = _ref.playerID;
+
+  var gameMetadata = await db.get(getGameMetadataKey(gameID));
+  if (!gameMetadata) {
+    return true;
+  }
+
+  if (!action.payload) {
+    return true;
+  }
+
+  var hasCredentials = Object.keys(gameMetadata.players).some(function (key) {
+    return !!(gameMetadata.players[key] && gameMetadata.players[key].credentials);
+  });
+  if (!hasCredentials) {
+    return true;
+  }
+
+  if (!action.payload.credentials) {
+    return false;
+  }
+
+  if (action.payload.credentials !== gameMetadata.players[playerID].credentials) {
+    return false;
+  }
+
+  return true;
+};
+
+var addApiToServer = function addApiToServer(_ref2) {
+  var app = _ref2.app,
+      db = _ref2.db,
+      games = _ref2.games;
+
+  var router = new Router();
+
+  router.get('/games', async function (ctx) {
+    ctx.body = games.map(function (game) {
+      return game.name;
+    });
+  });
+
+  router.post('/games/:name/create', koaBody(), async function (ctx) {
+    var gameName = ctx.params.name;
+    var numPlayers = parseInt(ctx.request.body.numPlayers);
+    if (!numPlayers) {
+      numPlayers = 2;
+    }
+
+    var gameMetadata = createGameMetadata();
+
+    var game = games.find(function (g) {
+      return g.name === gameName;
+    });
+    var reducer = CreateGameReducer({
+      game: game,
+      numPlayers: numPlayers,
+      setupData: ctx.request.body.setupData
+    });
+    var store = Redux.createStore(reducer);
+    var state = store.getState();
+
+    for (var playerIndex = 0; playerIndex < numPlayers; playerIndex++) {
+      var credentials = createCredentials();
+      gameMetadata.players[playerIndex] = { id: playerIndex, credentials: credentials };
+    }
+
+    var gameID = getNewGameInstanceID();
+    var namespacedGameID = getNamespacedGameID(gameID, gameName);
+
+    await db.set(getGameMetadataKey(namespacedGameID), gameMetadata);
+    await db.set(namespacedGameID, state);
+
+    ctx.body = {
+      gameID: gameID
+    };
+  });
+
+  router.get('/games/:name', async function (ctx) {
+    var gameName = ctx.params.name;
+    var gameList = await db.list();
+    var gameInstances = [];
+
+    var _arr = [].concat(toConsumableArray(gameList));
+
+    for (var _i = 0; _i < _arr.length; _i++) {
+      var key = _arr[_i];
+      if (isGameMetadataKey(key, gameName)) {
+        var gameID = key.slice(gameName.length + 1, key.lastIndexOf(':metadata'));
+        var metadata = await db.get(key);
+        gameInstances.push({
+          gameID: gameID,
+          players: Object.values(metadata.players).map(function (player) {
+            // strip away credentials
+            return { id: player.id, name: player.name };
+          })
+        });
+      }
+    }
+    ctx.body = {
+      gameInstances: gameInstances
+    };
+  });
+
+  router.post('/games/:name/:id/join', koaBody(), async function (ctx) {
+    var gameName = ctx.params.name;
+    var gameID = ctx.params.id;
+    var playerID = ctx.request.body.playerID;
+    var playerName = ctx.request.body.playerName;
+    var namespacedGameID = getNamespacedGameID(gameID, gameName);
+    var gameMetadata = await db.get(getGameMetadataKey(namespacedGameID));
+
+    if (!gameMetadata) {
+      ctx.throw(404, 'Game ' + gameID + ' not found');
+    }
+    if (!gameMetadata.players[playerID]) {
+      ctx.throw(404, 'Player ' + playerID + ' not found');
+    }
+    if (gameMetadata.players[playerID].name) {
+      ctx.throw(409, 'Player ' + playerID + ' not available');
+    }
+
+    gameMetadata.players[playerID].name = playerName;
+    var playerCredentials = gameMetadata.players[playerID].credentials;
+
+    await db.set(getGameMetadataKey(namespacedGameID), gameMetadata);
+
+    ctx.body = {
+      playerCredentials: playerCredentials
+    };
+  });
+
+  router.post('/games/:name/:id/leave', koaBody(), async function (ctx) {
+    var gameName = ctx.params.name;
+    var gameID = ctx.params.id;
+    var playerID = ctx.request.body.playerID;
+    var playerCredentials = ctx.request.body.playerCredentials;
+    var namespacedGameID = getNamespacedGameID(gameID, gameName);
+    var gameMetadata = await db.get(getGameMetadataKey(namespacedGameID));
+
+    if (!gameMetadata) {
+      ctx.throw(404, 'Game ' + gameID + ' not found');
+    }
+    if (!gameMetadata.players[playerID]) {
+      ctx.throw(404, 'Player ' + playerID + ' not found');
+    }
+    if (playerCredentials !== gameMetadata.players[playerID].credentials) {
+      ctx.throw(403, 'Invalid credentials ' + playerCredentials);
+    }
+
+    delete gameMetadata.players[playerID].name;
+    if (Object.values(gameMetadata.players).some(function (val) {
+      return val.name;
+    })) {
+      await db.set(getGameMetadataKey(namespacedGameID), gameMetadata);
+    } else {
+      // remove game
+      await db.remove(gameID);
+      await db.remove(getGameMetadataKey(namespacedGameID));
+    }
+    ctx.body = {};
+  });
+
+  app.use(cors());
+
+  // If API_SECRET is set, then require that requests set an
+  // api-secret header that is set to the same value.
+  app.use(async function (ctx, next) {
+    if (!!process.env.API_SECRET && ctx.request.headers['api-secret'] !== process.env.API_SECRET) {
+      ctx.throw(403, 'Invalid API secret');
+    }
+
+    await next();
+  });
+
+  app.use(router.routes()).use(router.allowedMethods());
+
+  return app;
+};
+
+/*
+ * Copyright 2017 The boardgame.io Authors
+ *
+ * Use of this source code is governed by a MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
+
+/**
+ * InMemory data storage.
+ */
+var InMemory = function () {
+  /**
+   * Creates a new InMemory storage.
+   */
+  function InMemory() {
+    classCallCheck(this, InMemory);
+
+    this.games = new Map();
+  }
+
+  /**
+   * Connect.
+   * No-op for the InMemory instance.
+   */
+
+
+  createClass(InMemory, [{
+    key: "connect",
+    value: async function connect() {
+      return;
+    }
+
+    /**
+     * Write the game state to the in-memory object.
+     * @param {string} id - The game id.
+     * @param {object} store - A game state to persist.
+     */
+
+  }, {
+    key: "set",
+    value: async function set$$1(id, state) {
+      return await this.games.set(id, state);
+    }
+
+    /**
+     * Read the game state from the in-memory object.
+     * @param {string} id - The game id.
+     * @returns {object} - A game state, or undefined
+     *                     if no game is found with this id.
+     */
+
+  }, {
+    key: "get",
+    value: async function get$$1(id) {
+      return await this.games.get(id);
+    }
+
+    /**
+     * Check if a particular game id exists.
+     * @param {string} id - The game id.
+     * @returns {boolean} - True if a game with this id exists.
+     */
+
+  }, {
+    key: "has",
+    value: async function has(id) {
+      return await this.games.has(id);
+    }
+
+    /**
+     * Remove the game state from the in-memory object.
+     * @param {string} id - The game id.
+     */
+
+  }, {
+    key: "remove",
+    value: async function remove(id) {
+      if (!(await this.games.has(id))) return;
+      this.games.delete(id);
+    }
+
+    /**
+     * Return all keys.
+     * @returns {array} - Array of keys (strings)
+     */
+
+  }, {
+    key: "list",
+    value: async function list() {
+      return [].concat(toConsumableArray((await this.games.keys())));
+    }
+  }]);
+  return InMemory;
+}();
+
+/*
+ * Copyright 2017 The boardgame.io Authors
+ *
+ * Use of this source code is governed by a MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
+
+var LRU = require('lru-cache');
+
+/**
+ * MongoDB connector.
+ */
+var Mongo = function () {
+  /**
+   * Creates a new Mongo connector object.
+   */
+  function Mongo(_ref) {
+    var url = _ref.url,
+        dbname = _ref.dbname,
+        cacheSize = _ref.cacheSize,
+        mockClient = _ref.mockClient;
+    classCallCheck(this, Mongo);
+
+    if (cacheSize === undefined) cacheSize = 1000;
+    if (dbname === undefined) dbname = 'bgio';
+
+    this.client = mockClient || require('mongodb').MongoClient;
+    this.url = url;
+    this.dbname = dbname;
+    this.cache = new LRU({ max: cacheSize });
+  }
+
+  /**
+   * Connect to the instance.
+   */
+
+
+  createClass(Mongo, [{
+    key: 'connect',
+    value: async function connect() {
+      var c = await this.client.connect(this.url, { useNewUrlParser: true });
+      this.db = c.db(this.dbname);
+      return;
+    }
+
+    /**
+     * Write the game state.
+     * @param {string} id - The game id.
+     * @param {object} store - A game state to persist.
+     */
+
+  }, {
+    key: 'set',
+    value: async function set$$1(id, state) {
+      // Don't set a value if the cache has a more recent version.
+      // This can occur due a race condition.
+      //
+      // For example:
+      //
+      // A --sync--> server | DB => 0 --+
+      //                                |
+      // A <--sync-- server | DB => 0 --+
+      //
+      // B --sync--> server | DB => 0 ----+
+      //                                  |
+      // A --move--> server | DB <= 1 --+ |
+      //                                | |
+      // A <--sync-- server | DB => 1 --+ |
+      //                                  |
+      // B <--sync-- server | DB => 0 ----+
+      //
+      var cacheValue = this.cache.get(id);
+      if (cacheValue && cacheValue._stateID >= state._stateID) {
+        return;
+      }
+
+      this.cache.set(id, state);
+
+      var col = this.db.collection(id);
+      delete state._id;
+      await col.insertOne(state);
+
+      return;
+    }
+
+    /**
+     * Read the game state.
+     * @param {string} id - The game id.
+     * @returns {object} - A game state, or undefined
+     *                     if no game is found with this id.
+     */
+
+  }, {
+    key: 'get',
+    value: async function get$$1(id) {
+      var cacheValue = this.cache.get(id);
+      if (cacheValue !== undefined) {
+        return cacheValue;
+      }
+
+      var col = this.db.collection(id);
+      var docs = await col.find().sort({ _id: -1 }).limit(1).toArray();
+
+      var oldStateID = 0;
+      cacheValue = this.cache.get(id);
+      /* istanbul ignore next line */
+      if (cacheValue !== undefined) {
+        /* istanbul ignore next line */
+        oldStateID = cacheValue._stateID;
+      }
+
+      var newStateID = -1;
+      if (docs.length > 0) {
+        newStateID = docs[0]._stateID;
+      }
+
+      // Update the cache, but only if the read
+      // value is newer than the value already in it.
+      // A race condition might overwrite the
+      // cache with an older value, so we need this.
+      if (newStateID >= oldStateID) {
+        this.cache.set(id, docs[0]);
+      }
+
+      return docs[0];
+    }
+
+    /**
+     * Check if a particular game exists.
+     * @param {string} id - The game id.
+     * @returns {boolean} - True if a game with this id exists.
+     */
+
+  }, {
+    key: 'has',
+    value: async function has(id) {
+      var cacheValue = this.cache.get(id);
+      if (cacheValue !== undefined) {
+        return true;
+      }
+
+      var col = this.db.collection(id);
+      var docs = await col.find().limit(1).toArray();
+      return docs.length > 0;
+    }
+
+    /**
+     * Remove the game state from the DB.
+     * @param {string} id - The game id.
+     */
+
+  }, {
+    key: 'remove',
+    value: async function remove(id) {
+      if (!(await this.has(id))) return;
+
+      function _dropCollection(db, id) {
+        return new Promise(function (ok) {
+          db.dropCollection(id, ok);
+        });
+      }
+      await _dropCollection(this.db, id);
+
+      // Update the cache
+      this.cache.del(id);
+    }
+
+    /**
+     * Return all keys.
+     * @returns {array} - Array of keys (strings)
+     */
+
+  }, {
+    key: 'list',
+    value: async function list() {
+      var keys = await this.db.listCollections().toArray();
+      return keys.map(function (r) {
+        return r.name;
+      });
+    }
+  }]);
+  return Mongo;
+}();
+
+/*
+ * Copyright 2017 The boardgame.io Authors
+ *
+ * Use of this source code is governed by a MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
+
+var LRU$1 = require('lru-cache');
+
+var ENGINE_FIRESTORE = 'Firestore';
+var ENGINE_RTDB = 'RTDB';
+
+/**
+ * Firebase RTDB/Firestore connector.
+ */
+var Firebase = function () {
+  /**
+   * Creates a new Firebase connector object.
+   * The default engine is Firestore.
+   * @constructor
+   */
+  function Firebase(_ref) {
+    var config = _ref.config,
+        dbname = _ref.dbname,
+        engine = _ref.engine,
+        cacheSize = _ref.cacheSize;
+    classCallCheck(this, Firebase);
+
+    if (cacheSize === undefined) {
+      cacheSize = 1000;
+    }
+
+    if (dbname === undefined) {
+      dbname = 'bgio';
+    }
+
+    // // TODO: better handling for possible errors
+    if (config === undefined) {
+      config = {};
+    }
+
+    this.client = require('firebase');
+    this.engine = engine === ENGINE_RTDB ? engine : ENGINE_FIRESTORE;
+    this.config = config;
+    this.dbname = dbname;
+    this.cache = new LRU$1({ max: cacheSize });
+  }
+
+  /**
+   * Connect to the instance.
+   */
+
+
+  createClass(Firebase, [{
+    key: 'connect',
+    value: async function connect() {
+      this.client.initializeApp(this.config);
+      this.db = this.engine === ENGINE_FIRESTORE ? this.client.firestore() : this.client.database().ref();
+      return;
+    }
+
+    /**
+     * Write the game state.
+     * @param {string} id - The game id.
+     * @param {object} store - A game state to persist.
+     */
+
+  }, {
+    key: 'set',
+    value: async function set$$1(id, state) {
+      var cacheValue = this.cache.get(id);
+      if (cacheValue && cacheValue._stateID >= state._stateID) {
+        return;
+      }
+
+      this.cache.set(id, state);
+
+      var col = this.engine === ENGINE_RTDB ? this.db.child(id) : this.db.collection(this.dbname).doc(id);
+      delete state._id;
+      await col.set(state);
+
+      return;
+    }
+
+    /**
+     * Read the game state.
+     * @param {string} id - The game id.
+     * @returns {object} - A game state, or undefined
+     *                     if no game is found with this id.
+     */
+
+  }, {
+    key: 'get',
+    value: async function get$$1(id) {
+      var cacheValue = this.cache.get(id);
+      if (cacheValue !== undefined) {
+        return cacheValue;
+      }
+
+      var col = void 0,
+          doc = void 0,
+          data = void 0;
+      if (this.engine === ENGINE_RTDB) {
+        col = this.db.child(id);
+        data = await col.once('value');
+        doc = data.val() ? Object.assign({}, data.val(), { _id: id }) : data.val();
+      } else {
+        col = this.db.collection(this.dbname).doc(id);
+        data = await col.get();
+        doc = data.data() ? Object.assign({}, data.data(), { _id: id }) : data.data();
+      }
+
+      var oldStateID = 0;
+      cacheValue = this.cache.get(id);
+      /* istanbul ignore next line */
+      if (cacheValue !== undefined) {
+        /* istanbul ignore next line */
+        oldStateID = cacheValue._stateID;
+      }
+
+      var newStateID = -1;
+      if (doc) {
+        newStateID = doc._stateID;
+      }
+
+      // Update the cache, but only if the read
+      // value is newer than the value already in it.
+      // A race condition might overwrite the
+      // cache with an older value, so we need this.
+      if (newStateID >= oldStateID) {
+        this.cache.set(id, doc);
+      }
+
+      return doc;
+    }
+
+    /**
+     * Check if a particular game exists.
+     * @param {string} id - The game id.
+     * @returns {boolean} - True if a game with this id exists.
+     */
+
+  }, {
+    key: 'has',
+    value: async function has(id) {
+      var cacheValue = this.cache.get(id);
+      if (cacheValue !== undefined) {
+        return true;
+      }
+
+      var col = void 0,
+          data = void 0,
+          exists = void 0;
+      if (this.engine === ENGINE_RTDB) {
+        col = this.db.child(id);
+        data = await col.once('value');
+        exists = data.exists();
+      } else {
+        col = this.db.collection(this.dbname).doc(id);
+        data = await col.get();
+        exists = data.exists;
+      }
+
+      return exists;
+    }
+
+    /**
+     * Remove the game state from the DB.
+     * @param {string} id - The game id.
+     */
+
+  }, {
+    key: 'remove',
+    value: async function remove(id) {
+      if (!(await this.has(id))) return;
+
+      var col = void 0;
+      if (this.engine === ENGINE_RTDB) {
+        col = this.db.child(id);
+        await col.remove();
+      } else {
+        col = this.db.collection(this.dbname).doc(id);
+        await col.delete();
+      }
+
+      // Update the cache
+      this.cache.del(id);
+    }
+
+    /**
+     * Return all keys.
+     * @returns {array} - Array of keys (strings)
+     */
+
+  }, {
+    key: 'list',
+    value: async function list() {
+      if (this.engine === ENGINE_RTDB) {
+        // firebase RTDB
+        var cols = await this.db.once('value');
+        return cols.ref.sortedDataKeys;
+      } else {
+        // firestore
+        var docs = await this.db.collection(this.dbname).get();
+        var ids = [];
+        docs.forEach(function (doc) {
+          return ids.push(doc.id);
+        });
+        return ids;
+      }
+    }
+  }]);
+  return Firebase;
+}();
+
+var DBFromEnv = function DBFromEnv() {
+  if (process.env.MONGO_URI && process.env.MONGO_DATABASE) {
+    return new Mongo({
+      url: process.env.MONGO_URI,
+      dbname: process.env.MONGO_DATABASE
+    });
+  } else if (process.env.FIREBASE_APIKEY && process.env.FIREBASE_AUTHDOMAIN && process.env.FIREBASE_DATABASEURL && process.env.FIREBASE_PROJECTID) {
+    var config = {
+      apiKey: process.env.FIREBASE_APIKEY,
+      authDomain: process.env.FIREBASE_AUTHDOMAIN,
+      databaseURL: process.env.FIREBASE_DATABASEURL,
+      projectId: process.env.FIREBASE_PROJECTID
+    };
+    return new Firebase({ config: config, engine: process.env.FIREBASE_ENGINE });
+  } else {
+    return new InMemory();
+  }
+};
+
+/*
+ * Copyright 2018 The boardgame.io Authors
+ *
+ * Use of this source code is governed by a MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
+
+var DEV = process.env.NODE_ENV === 'development' || process.env.NODE_ENV == 'test';
+var logfn = DEV ? console.log : function () {};
+
+function info(msg) {
+  logfn('INFO: ' + msg);
+}
+function error(msg) {
+  logfn('ERROR: ' + msg);
+}
+
 function symbolObservablePonyfill(root) {
 	var result;
 	var Symbol = root.Symbol;
@@ -3065,57 +3284,6 @@ var Master = function () {
  * https://opensource.org/licenses/MIT.
  */
 
-var Koa$1 = require('koa');
-var Router = require('koa-router');
-var koaBody = require('koa-body');
-var uuid = require('uuid/v4');
-var cors = require('@koa/cors');
-var Redux = require('redux');
-
-var getGameMetadataKey = function getGameMetadataKey(gameID) {
-  return gameID + ':metadata';
-};
-var isActionFromAuthenticPlayer = async function isActionFromAuthenticPlayer(_ref) {
-  var action = _ref.action,
-      db = _ref.db,
-      gameID = _ref.gameID,
-      playerID = _ref.playerID;
-
-  var gameMetadata = await db.get(getGameMetadataKey(gameID));
-  if (!gameMetadata) {
-    return true;
-  }
-
-  if (!action.payload) {
-    return true;
-  }
-
-  var hasCredentials = Object.keys(gameMetadata.players).some(function (key) {
-    return !!(gameMetadata.players[key] && gameMetadata.players[key].credentials);
-  });
-  if (!hasCredentials) {
-    return true;
-  }
-
-  if (!action.payload.credentials) {
-    return false;
-  }
-
-  if (action.payload.credentials !== gameMetadata.players[playerID].credentials) {
-    return false;
-  }
-
-  return true;
-};
-
-/*
- * Copyright 2018 The boardgame.io Authors
- *
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE file or at
- * https://opensource.org/licenses/MIT.
- */
-
 var IO = require('koa-socket-2');
 
 var PING_TIMEOUT = 20 * 1e3;
@@ -3314,6 +3482,8 @@ function Server(_ref) {
     transport = SocketIO();
   }
   transport.init(app, games);
+
+  addApiToServer({ app: app, db: db, games: games });
 
   return {
     app: app,
