@@ -1993,6 +1993,7 @@ function CreateGameReducer(_ref) {
  * https://opensource.org/licenses/MIT.
  */
 
+var Koa$1 = require('koa');
 var Router = require('koa-router');
 var koaBody = require('koa-body');
 var uuid = require('uuid/v4');
@@ -2053,10 +2054,18 @@ var isActionFromAuthenticPlayer = async function isActionFromAuthenticPlayer(_re
   return true;
 };
 
-var addApiToServer = function addApiToServer(_ref2) {
-  var app = _ref2.app,
-      db = _ref2.db,
+var createApiServer = function createApiServer(_ref2) {
+  var db = _ref2.db,
       games = _ref2.games;
+
+  var app = new Koa$1();
+  return addApiToServer({ app: app, db: db, games: games });
+};
+
+var addApiToServer = function addApiToServer(_ref3) {
+  var app = _ref3.app,
+      db = _ref3.db,
+      games = _ref3.games;
 
   var router = new Router();
 
@@ -3469,7 +3478,9 @@ var Koa = require('koa');
 function Server(_ref) {
   var games = _ref.games,
       db = _ref.db,
-      transport = _ref.transport;
+      transport = _ref.transport,
+      _ref$singlePort = _ref.singlePort,
+      singlePort = _ref$singlePort === undefined ? false : _ref$singlePort;
 
   var app = new Koa();
 
@@ -3483,13 +3494,17 @@ function Server(_ref) {
   }
   transport.init(app, games);
 
-  addApiToServer({ app: app, db: db, games: games });
+  var api = singlePort ? addApiToServer({ app: app, db: db, games: games }) : createApiServer({ db: db, games: games });
 
   return {
     app: app,
+    api: api,
     db: db,
-    run: async function run(port, callback) {
+    run: async function run(port, callback, apiPort) {
       await db.connect();
+      if (!singlePort) {
+        await api.listen(apiPort || port + 1);
+      }
       await app.listen(port, callback);
       info('listening...');
     }
